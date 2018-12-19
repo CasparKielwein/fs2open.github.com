@@ -67,10 +67,8 @@ struct bitmap_entry {
 	// identification
 	char filename[MAX_FILENAME_LEN]; //!< filename for this bitmap
 
-	uint signature;        //!< a unique signature identifying the data
-	uint palette_checksum; //!< checksum used to be sure bitmap is in current palette
-	int handle;            //!< Handle = id*MAX_BITMAPS + bitmapnum
-	int last_used;         //!< When this bitmap was last used
+	uint signature; //!< a unique signature identifying the data
+	int handle;     //!< Handle = id*MAX_BITMAPS + bitmapnum
 
 	BM_TYPE type;          //!< PCX, USER, ANI, etc
 	BM_TYPE comp_type;     //!< What sort of compressed type, BM_TYPE_NONE if not compressed
