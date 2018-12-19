@@ -15,7 +15,8 @@
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
 
-void bm_create_example() {
+void bm_create_example()
+{
 	static int test_inited = 0;
 	static int test_bmp;
 	static uint test_bmp_data[128 * 64];
@@ -29,7 +30,7 @@ void bm_create_example() {
 		int i, j;
 		for (i = 0; i < 64; i++) {
 			for (j = 0; j < 64; j++) {
-				uint r = i * 4;
+				uint r                     = i * 4;
 				test_bmp_data[j + i * 128] = r;
 			}
 		}
