@@ -163,6 +163,9 @@ class bitmap_lookup {
 
 	bool valid();
 
+	float get_channel_red(float u, float v);
+	float get_channel_green(float u, float v);
+	float get_channel_blue(float u, float v);
 	float get_channel_alpha(float u, float v);
 };
 
@@ -308,6 +311,13 @@ int bm_load_either(const char* filename, int* nframes = nullptr, int* fps = null
 bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
 
 /**
+ * @brief Returns a unique signiature for the bitmap indexed by handle
+ *
+ * @details A signature will change when the bitmap's data changes
+ */
+uint bm_get_signature(int handle);
+
+/**
  * @brief Returns the image type of the given bitmap handle
  */
 BM_TYPE bm_get_type(int handle);
@@ -449,6 +459,15 @@ void bm_page_in_xparent_texture(int bitmapnum, int num_frames = 1);
 void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
 
 /**
+ * @brief Unloads the bitmap indexed by handle that was previously paged-in
+ *
+ * @returns 0 If the bitmap had already been released, or
+ * @returns 0 If the handle is invalid, or
+ * @returns 1 If successful
+ */
+bool bm_page_out(int handle);
+
+/**
  * @brief Sets BMPMAN's memory mode
  *
  * @details 0 = High memory;
@@ -497,11 +516,28 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
 extern void (*bm_set_components)(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
 
 /**
+ * @brief Functional pointer that references any of the bm_set_components_32 functions.
+ *
+ * @details The bm_set_components functions packs the RGBA values into the ubyte array referenced by pixel, whose
+ * format differs according to its bpp value and presence of an alpha channel. The RGBA values are scaled accordingly.
+ *
+ * @see bm_set_components
+ */
+extern void (*bm_set_components_32)(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
+
+/**
  * @brief Sets the 16bpp screen pixel to the specified RGBA value
  *
  * @see bm_set_components
  */
 void bm_set_components_argb_16_screen(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
+
+/**
+ * @brief Sets the 32bpp screen pixel to the specified RGBA value
+ *
+ * @see bm_set_components
+ */
+void bm_set_components_argb_32_screen(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
 
 /**
  * @brief Sets the 16bpp texture pixel to the specified RGBA value
@@ -511,11 +547,30 @@ void bm_set_components_argb_16_screen(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b
 void bm_set_components_argb_16_tex(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
 
 /**
+ * @brief Sets the 32bpp texture pixel to the specified RGBA value
+ *
+ * @see bm_set_components
+ */
+void bm_set_components_argb_32_tex(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
+
+/**
  * @brief Gets the RGBA components of a pixel according to the selected mode
  *
  * @see BM_SELECT_SCREEN_FORMAT() BM_SELECT_TEX_FORMAT() BM_SELECT_ALPHA_TEX_FORMAT()
  */
 void bm_get_components(ubyte* pixel, ubyte* r, ubyte* g, ubyte* b, ubyte* a);
+
+extern int UNLITMAP; // this holds a reference to a map that is optional used instead of the base map for unlit
+                     // rendering
+extern int GLOWMAP;      // this holds a reference to a map that is a fully lit version of its index -Bobboau
+extern int SPECMAP;      // this holds a reference to a map that is for specular mapping -Bobboau
+extern int SPECGLOSSMAP; // this holds a reference to a map that is for specular mapping -Bobboau
+extern int ENVMAP;       // this holds a reference to a map that is for environment mapping -Bobboau
+extern int NORMMAP;      // normal mapping
+extern int HEIGHTMAP;    // height map for normal mapping
+extern int AMBIENTMAP; // ambient occluion map. red channel affects ambient lighting, green channel affects diffuse and
+                       // specular
+extern int MISCMAP;    // Utility map, to be utilized for various things shader authors can come up with
 
 /**
  * @brief Returns the compression type of the bitmap indexed by handle
@@ -526,6 +581,11 @@ int bm_is_compressed(int handle);
  * @brief Gets the correct TCACHE_TYPE for compressed graphics (uncompressed are assumed TCACHE_TYPE_NORMAL)
  */
 int bm_get_tcache_type(int handle);
+
+/**
+ * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
+ */
+size_t bm_get_size(int handle);
 
 /**
  * @brief Gets the number of mipmaps of the indexed texture
