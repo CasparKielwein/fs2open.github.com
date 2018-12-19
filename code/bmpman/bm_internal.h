@@ -102,7 +102,7 @@ struct bitmap_entry {
 };
 
 struct bitmap_slot {
-	bitmap_entry entry;
+	bitmap_entry entry = bitmap_entry();
 
 	gr_bitmap_info* gr_info = nullptr;
 };

@@ -163,7 +163,7 @@ class bitmap_lookup {
 	float map_texture_address(float address);
 
   public:
-	bitmap_lookup(int bitmap_num);
+	explicit bitmap_lookup(int bitmap_num);
 	~bitmap_lookup();
 
 	bool valid();
@@ -219,7 +219,7 @@ int bm_load_duplicate(const char* filename);
  *
  * @note The used RAM cannot be freed until bm_release is called on the created bitmap
  */
-int bm_create(int bpp, int w, int h, void* data = NULL, int flags = 0);
+int bm_create(int bpp, int w, int h, void* data = nullptr, int flags = 0);
 
 /**
  * @brief Unloads a bitmap's data, but not the bitmap info
@@ -281,7 +281,7 @@ int bm_release(int handle, int clear_render_targets = 0);
  * @returns A negative value if unsuccessful
  */
 int bm_load_animation(const char* filename, int* nframes = nullptr, int* fps = nullptr, int* keyframe = nullptr,
-                      float* total_time = nullptr, bool can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+                      float* total_time = nullptr, bool can_drop_frames = false, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Loads either animation (bm_load_animation) or still image (bm_load)
@@ -296,7 +296,7 @@ int bm_load_animation(const char* filename, int* nframes = nullptr, int* fps = n
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_either(const char* filename, int* nframes = NULL, int* fps = NULL, int* keyframe = NULL,
+int bm_load_either(const char* filename, int* nframes = nullptr, int* fps = nullptr, int* keyframe = nullptr,
                    bool can_drop_frames = false, int dir_type = CF_TYPE_ANY);
 
 /**
@@ -311,7 +311,7 @@ int bm_load_either(const char* filename, int* nframes = NULL, int* fps = NULL, i
  * @param nodebug
 
  * @returns A pointer to the bitmap that's valid until bm_unlock is called if successful, or
- * @returns NULL if unsuccessful
+ * @returns nullptr if unsuccessful
  */
 bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
 
@@ -363,7 +363,7 @@ int bm_is_valid(int handle);
  * @returns The handle to the first frame on success, or
  * @returns -1 on failure
  */
-int bm_get_info(int handle, int* w = NULL, int* h = NULL, ubyte* flags = NULL, int* nframes = NULL, int* fps = NULL);
+int bm_get_info(int handle, int* w = nullptr, int* h = nullptr, ubyte* flags = nullptr, int* nframes = nullptr, int* fps = nullptr);
 
 /**
  * @brief Gets the filename of the bitmap indexed by handle
@@ -505,14 +505,14 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
  * format differs according to its bpp value and presence of an alpha channel. The RGBA values are scaled accordingly.
  *
  * @param[out] pixel The pixel to set
- * @param[in] r Red value   (may not be NULL)
- * @param[in] g Green value (may not be NULL)
- * @param[in] b Blue value  (may not be NULL)
+ * @param[in] r Red value   (may not be nullptr)
+ * @param[in] g Green value (may not be nullptr)
+ * @param[in] b Blue value  (may not be nullptr)
  * @param[in] a Alpha value (currently ignored)
  *
  * @note z64 - These functions were made predating the introduction of C++ classes, and are basically the equivalent
  * of Pixel::set(ubyte *r, ubyte *b, ubyte *g). The original comment mentions that any of the rgba params may be
- * NULL, but this is by far _NOT_ the case, as a NULL value will cause undefined behavior (really really bad chroma
+ * nullptr, but this is by far _NOT_ the case, as a nullptr value will cause undefined behavior (really really bad chroma
  * corruption)
  *
  * @note These functions assume the incoming bitdepth will always be >= to the outgoing bitdepth of the pixel. Should
