@@ -14,6 +14,7 @@
 #include "render/3d.h"
 #include "graphics/material.h"
 #include "tracing/tracing.h"
+#include "utils/unary_cache.h"
 
 static SCP_map<batch_info, primitive_batch> Batching_primitives;
 static SCP_map<batch_buffer_key, primitive_batch_buffer> Batching_buffers;
@@ -718,6 +719,25 @@ void batching_add_bitmap_rotated(int texture, vertex *pnt, float angle, float ra
 	batching_add_bitmap_rotated_internal(batch, texture, pnt, angle, rad, &clr, depth);
 }
 
+namespace {
+	primitive_batch* find_batch_volume(int texture)
+	{
+		return batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
+	}
+	primitive_batch* find_batch_flat(int texture)
+	{
+		return batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
+	}
+
+	using VolumeCache = UnaryCache<int, primitive_batch*>;
+	using FlatCache = UnaryCache<int, primitive_batch*>;
+
+	//(file) global caches for batch pointers since they should be persistent between function calls.
+	VolumeCache volume_batch_cache = VolumeCache(find_batch_volume, -1, nullptr);
+	FlatCache flat_batch_cache = FlatCache(find_batch_flat, -1, nullptr);
+
+}
+
 void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth)
 {
 	if (texture < 0) {
@@ -728,9 +748,9 @@ void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad,
 	primitive_batch *batch;
 	
 	if ( gr_is_capable(CAPABILITY_SOFT_PARTICLES) ) {
-		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
+		batch = volume_batch_cache.get(texture);
 	} else {
-		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
+		batch = flat_batch_cache.get(texture);
 	}
 
 	color clr;
