@@ -138,7 +138,6 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 	vec3d hitpos;
 	int ret;
 
-
     vec3d prev_pos = A->pos;
 	vm_vec_scale_add2(&A->pos, &A->phys_info.vel, duration);
 
@@ -268,8 +267,6 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
 		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
-			vec3d delta_x, laser_vel;
-			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
 			if (max_vel_weapon == max_vel_other) {
@@ -278,15 +275,16 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 				return 0;
 			}
 
+			vec3d delta_x;
 			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
-			laser_vel = obj_weapon->phys_info.vel;
+			vec3d laser_vel = obj_weapon->phys_info.vel;
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
-			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dot( &delta_x, &laser_vel );
+			float delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
+			float delta_x_dot_vl = vm_vec_dot( &delta_x, &laser_vel );
 
-			a = max_vel_weapon*max_vel_weapon - max_vel_other*max_vel_other;
-			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);
-			c = vm_vec_mag_squared( &delta_x ) - max_vel_other*max_vel_other*delta_t*delta_t;
+			float a = max_vel_weapon*max_vel_weapon - max_vel_other*max_vel_other;
+			float b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);
+			float c = vm_vec_mag_squared( &delta_x ) - max_vel_other*max_vel_other*delta_t*delta_t;
 
 			float discriminant = b*b - 4.0f*a*c;
 			if ( discriminant < 0) {
@@ -302,9 +300,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			if (max_vel_weapon > max_vel_other) {
 				// find earliest positive time
 				if ( root1 > root2 ) {
-					float temp = root1;
-					root1 = root2;
-					root2 = temp;
+					std::swap(root1, root2);
 				}
 
 				if (root1 > 0) {
@@ -396,15 +392,13 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 	return mc.num_hits;
 }
 
-//	Setup and call pp_collide for collide_predict_large_ship
-//	Returns true if objp will collide with objp2 before it reaches goal_pos.
-int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
+/**
+ * @brief Setup and call pp_collide for collide_predict_large_ship
+ * @return true if objp will collide with objp2 before it reaches goal_pos.
+ */
+static int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 {
-	float radius = objp->radius;
-	if (1.5f * radius < 70.0f)
-		radius *= 1.5f;
-	else
-		radius = 70.0f;
+	const float radius(std::min(70.0f, 1.5f * objp->radius)),
 
 	if (pp_collide(&objp->pos, goal_pos, objp2, radius))
 		return 1;
@@ -416,7 +410,6 @@ int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 //	Don't check for an object this ship is docked to.
 int collide_predict_large_ship(object *objp, float distance)
 {
-	object	*objp2;
 	vec3d	goal_pos;
 	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
@@ -424,7 +417,7 @@ int collide_predict_large_ship(object *objp, float distance)
 
 	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.vec.fvec, distance);
 
-	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
+	for (object* objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
 			if (Ship_info[Ships[objp2->instance].ship_info_index].is_big_or_huge()) {
 				if (dock_check_find_docked_object(objp, objp2))
@@ -468,7 +461,7 @@ int collide_predict_large_ship(object *objp, float distance)
 
 char crw_status[MAX_WEAPONS];
 
-void crw_check_weapon( int weapon_num, int collide_next_check )
+static void crw_check_weapon( int weapon_num, int collide_next_check )
 {
 	weapon *wp = &Weapons[weapon_num];
 
@@ -691,29 +684,27 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
 
         float pivot_value = obj_get_collider_endpoint((*list)[pivot_index], axis, true);
 
-        // swap!
-        int temp = (*list)[pivot_index];
-        (*list)[pivot_index] = (*list)[right];
-        (*list)[right] = temp;
+        std::swap((*list)[pivot_index], (*list)[right]);
 
         int store_index = left;
 
         for (int i = left; i < right; ++i ) {
             if ( obj_get_collider_endpoint((*list)[i], axis, true) <= pivot_value ) {
-                temp = (*list)[i];
-                (*list)[i] = (*list)[store_index];
-                (*list)[store_index] = temp;
+                std::swap((*list)[i], (*list)[store_index]);
                 store_index++;
             }
         }
 
-        temp = (*list)[right];
-        (*list)[right] = (*list)[store_index];
-        (*list)[store_index] = temp;
+        std::swap((*list)[right], (*list)[store_index]);
 
         obj_quicksort_colliders(list, left, store_index - 1, axis);
         obj_quicksort_colliders(list, store_index + 1, right, axis);
     }
+}
+
+constexpr uint COLLISION_OF(unsigned a, unsigned b)
+{
+    return (a << 8u)| b;
 }
 
 void obj_collide_pair(object *A, object *B)

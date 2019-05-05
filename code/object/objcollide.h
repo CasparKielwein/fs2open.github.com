@@ -18,22 +18,22 @@ class object;
 struct CFILE;
 struct mc_info;
 
-// used for ship:ship and ship:debris
+/// used for ship:ship and ship:debris
 struct collision_info_struct {
 	object	*heavy;
 	object	*light;
-	vec3d	light_collision_cm_pos;	// relative cm collision pos
-	vec3d	r_heavy;						// relative to A
-	vec3d	r_light;						// relative to B
-	vec3d	hit_pos;					// relative hit position in A's rf (r_heavy)
-	vec3d	collision_normal;		// normal outward from heavy
-	float		hit_time;				// time normalized [0,1] when sphere hits model
-	float		impulse;					// damage scales according to impulse
-	vec3d	light_rel_vel;			// velocity of light relative to heavy before collison
-	int		collide_rotate;		// if collision is detected purely from rotation
-	int		submodel_num;			// submodel of heavy object that is hit
-	int		edge_hit;				// if edge is hit, need to change collision normal
-	int		submodel_rot_hit;		// if collision is against rotating submodel
+	vec3d	light_collision_cm_pos;	//< relative cm collision pos
+	vec3d	r_heavy;				//< relative to A
+	vec3d	r_light;				//< relative to B
+	vec3d	hit_pos;				//< relative hit position in A's rf (r_heavy)
+	vec3d	collision_normal;		//< normal outward from heavy
+	float		hit_time;			//< time normalized [0,1] when sphere hits model
+	float		impulse;			//< damage scales according to impulse
+	vec3d	light_rel_vel;			//< velocity of light relative to heavy before collison
+	int		collide_rotate;		//< if collision is detected purely from rotation
+	int		submodel_num;			//< submodel of heavy object that is hit
+	int		edge_hit;				//< if edge is hit, need to change collision normal
+	int		submodel_rot_hit;		//< if collision is against rotating submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
 };
 
@@ -49,16 +49,13 @@ struct collision_info_struct {
 // type specific collision modules.
 //===============================================================================
 
-// Keeps track of pairs of objects for collision detection
+/// Keeps track of pairs of objects for collision detection
 struct obj_pair	{
 	object *a;
 	object *b;
-	int	next_check_time;	// a timestamp that when elapsed means to check for a collision
-	struct obj_pair *next;
+	/// a timestamp that when elapsed means to check for a collision
+	int	next_check_time;
 };
-
-
-#define COLLISION_OF(a,b) (((a)<<8)|(b))
 
 #define SUBMODEL_NO_ROT_HIT	0
 #define SUBMODEL_ROT_HIT		1
@@ -69,19 +66,25 @@ void obj_remove_collider(int obj_index);
 void obj_reset_colliders();
 void obj_sort_and_collide();
 
-// retimes all collision pairs to be checked (in 25ms by default)
+/// retimes all collision pairs to be checked (in 25ms by default)
 void obj_collide_retime_cached_pairs(int checkdly=25);
 
-// Returns TRUE if the weapon will never hit the other object.
-// If it can it predicts how long until these two objects need
-// to be checked and fills the time in in current_pair.
-// CODE is locatated in CollideGeneral.cpp
+/**
+ * @brief Returns TRUE if the weapon will never hit the other object.
+ *
+ * If it can it predicts how long until these two objects need
+ * to be checked and fills the time in in current_pair.
+ * CODE is locatated in objcollide.cpp
+ */
 int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pair );
 
 
-//	See if two lines intersect by doing recursive subdivision.
-//	Bails out if larger distance traveled is less than sum of radii + 1.0f.
-// CODE is locatated in CollideGeneral.cpp
+/**
+ * @brief See if two lines intersect by doing recursive subdivision.
+ *
+ *	Bails out if larger distance traveled is less than sum of radii + 1.0f.
+ * CODE is locatated in objcollide.cpp
+ */
 int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, float qrad);
 
 
@@ -89,42 +92,60 @@ int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, fl
 // SPECIFIC COLLISION DETECTION FUNCTIONS 
 //===============================================================================
 
-// Checks weapon-weapon collisions.  pair->a and pair->b are weapons.
-// Returns 1 if all future collisions between these can be ignored
-// CODE is locatated in CollideWeaponWeapon.cpp
+/**
+ * @brief Checks weapon-weapon collisions.
+ * @param pair pair->a and pair->b are weapons.
+ * @return 1 if all future collisions between these can be ignored
+ *
+ * CODE is locatated in CollideWeaponWeapon.cpp
+ */
 int collide_weapon_weapon( obj_pair * pair );
 
-// Checks ship-weapon collisions.  pair->a is ship and pair->b is weapon.
-// Returns 1 if all future collisions between these can be ignored
-// CODE is locatated in CollideShipWeapon.cpp
+/**
+ * @brief Checks ship-weapon collisions.
+ * @param pair pair->a is ship and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ *
+ * CODE is locatated in CollideShipWeapon.cpp
+ */
 int collide_ship_weapon( obj_pair * pair );
 
-// Checks debris-weapon collisions.  pair->a is debris and pair->b is weapon.
-// Returns 1 if all future collisions between these can be ignored
-// CODE is locatated in CollideDebrisWeapon.cpp
+/**
+ * @brief Checks debris-weapon collisions.
+ * @param pair pair->a is debris and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ *
+ * CODE is locatated in CollideDebrisWeapon.cpp
+ */
 int collide_debris_weapon( obj_pair * pair );
 
-// Checks debris-ship collisions.  pair->a is debris and pair->b is ship.
-// Returns 1 if all future collisions between these can be ignored
-// CODE is locatated in CollideDebrisShip.cpp
+/**
+ * @brief Checks debris-ship collisions.
+ * @param pair pair->a is debris and pair->b is ship.
+ * @return 1 if all future collisions between these can be ignored
+ *
+ * CODE is locatated in CollideDebrisShip.cpp
+ */
 int collide_debris_ship( obj_pair * pair );
 
 int collide_asteroid_ship(obj_pair *pair);
 int collide_asteroid_weapon(obj_pair *pair);
 
-// Checks ship-ship collisions.  pair->a and pair->b are ships.
-// Returns 1 if all future collisions between these can be ignored
-// CODE is locatated in CollideShipShip.cpp
+/**
+ * @brief Checks ship-ship collisions.  pair->a and pair->b are ships.
+ * Returns 1 if all future collisions between these can be ignored
+ * CODE is locatated in CollideShipShip.cpp
+ */
 int collide_ship_ship( obj_pair * pair );
 
 //	Predictive functions.
-//	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp
+///	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius);
 
-//	Return true if objp will collide with some large ship if it moves distance distance.
+///	Returns true if objp will collide with some large ship if it moves distance distance.
 int collide_predict_large_ship(object *objp, float distance);
 
-// function to remove old weapons when no more weapon slots available.
+/// function to remove old weapons when no more weapon slots available.
 int collide_remove_weapons();
 
 void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved);

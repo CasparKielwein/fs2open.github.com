@@ -1854,12 +1854,6 @@ int obj_team(object *objp)
 }
 
 /**
- * Removes any occurances of object 'a' from
- * the pairs list.
- */
-extern int Num_pairs;
-
-/**
  * Reset all collisions
  */
 void obj_reset_all_collisions()
