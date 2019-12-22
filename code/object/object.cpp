@@ -773,7 +773,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	
 }
 
-void obj_move_call_physics(object *objp, float frametime)
+static void obj_move_call_physics(object *objp, float frametime)
 {
 	TRACE_SCOPE(tracing::Physics);
 
@@ -1085,7 +1085,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 }
 
 
-void obj_move_all_pre(object *objp, float frametime)
+static void obj_move_all_pre(object *objp, float frametime)
 {
 	TRACE_SCOPE(tracing::PreMove);
 
@@ -1153,7 +1153,7 @@ int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
 extern fireball Fireballs[];
 
-void obj_move_all_post(object *objp, float frametime)
+static void obj_move_all_post(object *objp, float frametime)
 {
 	switch (objp->type)
 	{
