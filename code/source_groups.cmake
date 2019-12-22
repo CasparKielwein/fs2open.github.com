@@ -849,6 +849,7 @@ add_file_folder("Object"
 	object/objectsnd.cpp
 	object/objectsnd.h
 	object/objectsort.cpp
+	object/objectstore.cpp
 	object/parseobjectdock.cpp
 	object/parseobjectdock.h
 	object/waypoint.cpp
