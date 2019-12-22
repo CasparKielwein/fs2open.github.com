@@ -29,4 +29,29 @@ void obj_init();
 
 void obj_shutdown();
 
+void obj_delete_all();
+
+///move all objects for the current frame
+void obj_move_all(float frametime);
+
+// Call this if you want to change an object flag so that the
+// object code knows what's going on.  For instance if you turn
+// off OF_COLLIDES, the object code needs to know this in order to
+// actually turn the object collision detection off.  By calling
+// this you shouldn't get Int3's in the checkobject code.  If you
+// do, then put code in here to correctly handle the case.
+void obj_set_flags(object *obj, const flagset<Object::Object_Flags>& new_flags);
+
+
+// multiplayer object update stuff begins -------------------------------------------
+
+/// do client-side pre-interpolation object movement
+void obj_client_pre_interpolate();
+
+/// do client-side post-interpolation object movement
+void obj_client_post_interpolate();
+
+/// move an observer object in multiplayer
+void obj_observer_move(float frame_time);
+
 #endif //FS2_OPEN_OBJECTSTORE_H

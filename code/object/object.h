@@ -211,16 +211,11 @@ void obj_render(object* obj);
 
 void obj_queue_render(object* obj, model_draw_list* scene);
 
-//Sorts and renders all the ojbects
+//Sorts and renders all the objects
 void obj_render_all(const std::function<void(object*)>& render_function, bool* render_viewer_last );
-
-//move all objects for the current frame
-void obj_move_all(float frametime);		// moves all objects
 
 // function to delete an object -- should probably only be called directly from editor code
 void obj_delete(int objnum);
-
-void obj_delete_all();
 
 // should only be used by the editor!
 void obj_merge_created_list();
@@ -252,27 +247,8 @@ void obj_get_average_ship_pos(vec3d *pos);
 // separated out because of multiplayer issues.
 void obj_player_fire_stuff( object *objp, control_info ci );
 
-// Call this if you want to change an object flag so that the
-// object code knows what's going on.  For instance if you turn
-// off OF_COLLIDES, the object code needs to know this in order to
-// actually turn the object collision detection off.  By calling
-// this you shouldn't get Int3's in the checkobject code.  If you
-// do, then put code in here to correctly handle the case.
-void obj_set_flags(object *obj, const flagset<Object::Object_Flags>& new_flags);
-
 /// get the team for any object
 int obj_team(object *objp);
-
-// multiplayer object update stuff begins -------------------------------------------
-
-/// do client-side pre-interpolation object movement
-void obj_client_pre_interpolate();
-
-/// do client-side post-interpolation object movement
-void obj_client_post_interpolate();
-
-/// move an observer object in multiplayer
-void obj_observer_move(float frame_time);
 
 /**
  * @brief Checks if the given object is docked with anyone.
