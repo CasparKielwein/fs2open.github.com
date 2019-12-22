@@ -33,7 +33,6 @@
 #include "observer/observer.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
-#include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "ship/afterburner.h"
@@ -47,7 +46,6 @@
 #include "graphics/light.h"
 
 
-
 /*
  *  Global variables
  */
@@ -56,8 +54,8 @@ object obj_free_list;
 object obj_used_list;
 object obj_create_list;	
 
-object *Player_obj = NULL;
-object *Viewer_obj = NULL;
+object *Player_obj = nullptr;
+object *Viewer_obj = nullptr;
 
 //Data for objects
 object Objects[MAX_OBJECTS];
@@ -118,8 +116,8 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
-	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
+	: next(nullptr), prev(nullptr), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
+	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
@@ -132,7 +130,7 @@ object::~object()
 	dock_free_dead_dock_list(this);
 }
 
-// DO NOT set next and prev to NULL because they keep the object on the free and used lists
+// DO NOT set next and prev to nullptr because they keep the object on the free and used lists
 void object::clear()
 {
 	signature = num_pairs = collision_group_id = 0;
@@ -163,22 +161,18 @@ void object::clear()
  */
 int free_object_slots(int num_used)
 {
-	int	i, olind, deleted_weapons;
+	int	olind = 0;
 	int	obj_list[MAX_OBJECTS];
-	int	num_already_free, num_to_free, original_num_to_free;
-	object *objp;
-
-	olind = 0;
 
 	// calc num_already_free by walking the obj_free_list
-	num_already_free = 0;
-	for ( objp = GET_FIRST(&obj_free_list); objp != END_OF_LIST(&obj_free_list); objp = GET_NEXT(objp) )
+	int num_already_free = 0;
+	for ( object* objp = GET_FIRST(&obj_free_list); objp != END_OF_LIST(&obj_free_list); objp = GET_NEXT(objp) )
 		num_already_free++;
 
 	if (MAX_OBJECTS - num_already_free < num_used)
 		return 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for ( object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
 			num_already_free++;
 			if (MAX_OBJECTS - num_already_free < num_used)
@@ -193,7 +187,6 @@ int free_object_slots(int num_used)
 				case OBJ_FIREBALL:
 				case OBJ_WEAPON:
 				case OBJ_DEBRIS:
-//				case OBJ_CMEASURE:
 					obj_list[olind++] = OBJ_INDEX(objp);
 					break;
 
@@ -213,18 +206,17 @@ int free_object_slots(int num_used)
 					Int3();	//	Hey, what kind of object is this?  Unknown!
 					break;
 			}
-
 	}
 
-	num_to_free = MAX_OBJECTS - num_used - num_already_free;
-	original_num_to_free = num_to_free;
+	int num_to_free = MAX_OBJECTS - num_used - num_already_free;
+	int original_num_to_free = num_to_free;
 
 	if (num_to_free > olind) {
 		nprintf(("allender", "Warning: Asked to free %i objects, but can only free %i.\n", num_to_free, olind));
 		num_to_free = olind;
 	}
 
-	for (i=0; i<num_to_free; i++)
+	for (int i=0; i<num_to_free; i++)
 		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (Debris[Objects[obj_list[i]].instance].flags & DEBRIS_EXPIRE) ) {
 			num_to_free--;
 			nprintf(("allender", "Freeing   DEBRIS object %3i\n", obj_list[i]));
@@ -234,7 +226,7 @@ int free_object_slots(int num_used)
 	if (!num_to_free)
 		return original_num_to_free;
 
-	for (i=0; i<num_to_free; i++)	{
+	for (int i=0; i<num_to_free; i++)	{
 		object *tmp_obj = &Objects[obj_list[i]];
 		if ( (tmp_obj->type == OBJ_FIREBALL) && (fireball_is_perishable(tmp_obj)) ) {
 			num_to_free--;
@@ -247,14 +239,14 @@ int free_object_slots(int num_used)
 		return original_num_to_free;
 	}
 
-	deleted_weapons = collide_remove_weapons();
+	int deleted_weapons = collide_remove_weapons();
 
 	num_to_free -= deleted_weapons;
 	if ( !num_to_free ){
 		return original_num_to_free;
 	}
 
-	for (i=0; i<num_to_free; i++){
+	for (int i=0; i<num_to_free; i++){
 		if ( Objects[obj_list[i]].type == OBJ_WEAPON ) {
 			num_to_free--;
 			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
@@ -335,21 +327,18 @@ static void on_script_state_destroy(lua_State*) {
  */
 void obj_init()
 {
-	int i;
-	object *objp;
-	
 	Object_inited = 1;
-	for (i = 0; i < MAX_OBJECTS; ++i)
-		Objects[i].clear();
-	Viewer_obj = NULL;
+	for (auto & Object : Objects)
+		Object.clear();
+	Viewer_obj = nullptr;
 
 	list_init( &obj_free_list );
 	list_init( &obj_used_list );
 	list_init( &obj_create_list );
 
 	// Link all object slots into the free list
-	objp = Objects;
-	for (i=0; i<MAX_OBJECTS; i++)	{
+	object* objp = Objects;
+	for (int i=0; i<MAX_OBJECTS; i++)	{
 		list_append(&obj_free_list, objp);
 		objp++;
 	}
@@ -381,20 +370,15 @@ static int num_objects_hwm = 0;
  * @return the number of a free object, updating Highest_object_index
  * @return -1 if no free objects
  */
-int obj_allocate(void)
+int obj_allocate()
 {
-	int objnum;
-	object *objp;
-
 	if (!Object_inited) {
 		mprintf(("Why hasn't obj_init() been called yet?\n"));
 		obj_init();
 	}
 
 	if ( Num_objects >= MAX_OBJECTS-10 ) {
-		int	num_freed;
-
-		num_freed = free_object_slots(MAX_OBJECTS-10);
+		int	num_freed = free_object_slots(MAX_OBJECTS-10);
 		nprintf(("warning", " *** Freed %i objects\n", num_freed));
 	}
 
@@ -406,7 +390,7 @@ int obj_allocate(void)
 	}
 
 	// Find next available object
-	objp = GET_FIRST(&obj_free_list);
+	object* objp = GET_FIRST(&obj_free_list);
 	Assert ( objp != &obj_free_list );		// shouldn't have the dummy element
 
 	// remove objp from the free list
@@ -423,7 +407,7 @@ int obj_allocate(void)
 	}
 
 	// get objnum
-	objnum = OBJ_INDEX(objp);
+    int objnum = OBJ_INDEX(objp);
 
 	if (objnum > Highest_object_index) {
 		Highest_object_index = objnum;
@@ -442,8 +426,6 @@ int obj_allocate(void)
  */
 void obj_free(int objnum)
 {
-	object *objp;
-
 	if (!Object_inited) {
 		mprintf(("Why hasn't obj_init() been called yet?\n"));
 		obj_init();
@@ -452,7 +434,7 @@ void obj_free(int objnum)
 	Assert( objnum >= 0 );	// Trying to free bogus object!!!
 
 	// get object pointer
-	objp = &Objects[objnum];
+    object* objp = &Objects[objnum];
 
 	// remove objp from the used list
 	list_remove( &obj_used_list, objp );
@@ -483,16 +465,13 @@ void obj_free(int objnum)
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
                vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags )
 {
-	int objnum;
-	object *obj;
-
 	// Find next free object
-	objnum = obj_allocate();
+	int objnum = obj_allocate();
 
 	if (objnum == -1)		//no free objects
 		return -1;
 
-	obj = &Objects[objnum];
+    object *obj = &Objects[objnum];
 	Assert(obj->type == OBJ_NONE);		//make sure unused 
 
 	// clear object in preparation for setting of custom values
@@ -553,10 +532,8 @@ void obj_delete_all()
  */
 void obj_delete(int objnum)
 {
-	object *objp;
-
 	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
-	objp = &Objects[objnum];
+	object* objp = &Objects[objnum];
 	if (objp->type == OBJ_NONE) {
 		mprintf(("obj_delete() called for already deleted object %d.\n", objnum));
 		return;
@@ -650,25 +627,22 @@ void obj_delete(int objnum)
 //	------------------------------------------------------------------------------------------------------------------
 void obj_delete_all_that_should_be_dead()
 {
-	object *objp, *temp;
-
 	if (!Object_inited) {
 		mprintf(("Why hasn't obj_init() been called yet?\n"));
 		obj_init();
 	}
 
 	// Move all objects
-	objp = GET_FIRST(&obj_used_list);
+	object* objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
 		// Goober5000 - HACK HACK HACK - see obj_move_all
 		objp->flags.remove(Object::Object_Flags::Docked_already_handled);
 
-		temp = GET_NEXT(objp);
+		object* temp = GET_NEXT(objp);
 		if ( objp->flags[Object::Object_Flags::Should_be_dead] )
 			obj_delete( OBJ_INDEX(objp) );			// MWA says that john says that let obj_delete handle everything because of the editor
 		objp = temp;
 	}
-
 }
 
 /**
@@ -742,12 +716,10 @@ void obj_move_one_docked_object(object *objp, object *parent_objp)
 */
 void obj_player_fire_stuff( object *objp, control_info ci )
 {
-	ship *shipp;
-
 	Assert( objp->flags[Object::Object_Flags::Player_ship]);
 
 	// try and get the ship pointer
-	shipp = NULL;
+	ship* shipp = nullptr;
 	if((objp->type == OBJ_SHIP) && (objp->instance >= 0) && (objp->instance < MAX_SHIPS)){
 		shipp = &Ships[objp->instance];
 	} else {
@@ -759,7 +731,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	{
 		if ( ci.fire_primary_count ) {
 			// flag the ship as having the trigger down
-			if(shipp != NULL){
+			if(shipp != nullptr){
 				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 			}
 
@@ -767,7 +739,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			ship_fire_primary( objp, 0 );
 		} else {
 			// unflag the ship as having the trigger down
-			if(shipp != NULL){
+			if(shipp != nullptr){
                 shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
@@ -812,9 +784,8 @@ void obj_move_call_physics(object *objp, float frametime)
 		// only set phys info if ship is not dead
 		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
-			float	engine_strength;
 
-			engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
+			float engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
 			if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				engine_strength=0.0f;
 			}
@@ -828,8 +799,8 @@ void obj_move_call_physics(object *objp, float frametime)
 
 			if (shipp->weapons.num_secondary_banks > 0) {
 				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-				Assertion( pm != NULL, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
-				Assertion( pm->missile_banks != NULL, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
+				Assertion( pm != nullptr, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
+				Assertion( pm->missile_banks != nullptr, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
@@ -921,7 +892,7 @@ void obj_move_call_physics(object *objp, float frametime)
 obj_maybe_fire:
 			if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp->type != OBJ_OBSERVER) && (objp == Player_obj)) {
 				player *pp;
-				if(Player != NULL){
+				if(Player != nullptr){
 					pp = Player;
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
@@ -1069,7 +1040,6 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 	// this code is pretty much debug code and shouldn't be relied on to always do the right thing
 	// for flags other than 
 	if ( MULTIPLAYER_MASTER && !(obj->flags[Object::Object_Flags::Could_be_player]) && (new_flags[Object::Object_Flags::Could_be_player]) ) {
-		ship *shipp;
 		int team, slot;
 
 		// this flag sometimes gets set for observers.
@@ -1083,7 +1053,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 		}
 
 		// see if this ship is really a player ship (or should be)
-		shipp = &Ships[obj->instance];
+		ship* shipp = &Ships[obj->instance];
 		extern void multi_ts_get_team_and_slot(char *, int *, int *, bool);
 		multi_ts_get_team_and_slot(shipp->ship_name,&team,&slot, false);
 		if ( (shipp->wingnum == -1) || (team == -1) || (slot==-1) ) {
@@ -1246,11 +1216,9 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
 				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
-					int i;
-					ship		*shipp;
-					shipp = &Ships[objp->instance];
+					ship* shipp = &Ships[objp->instance];
 
-					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+					for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
@@ -1336,12 +1304,10 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
 				if ( Detail.lighting > 3 ) {
-					int i;
-					debris		*db;
-					db = &Debris[objp->instance];
+					debris* db = &Debris[objp->instance];
 
 					if (db->arc_frequency > 0) {
-						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+						for (int i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
@@ -1415,7 +1381,6 @@ void obj_move_all(float frametime)
 {
 	TRACE_SCOPE(tracing::MoveObjects);
 
-	object *objp;	
 	SCP_vector<object*> cmeasure_list;
 	const bool global_cmeasure_timer = (Cmeasures_homing_check > 0);
 
@@ -1438,7 +1403,7 @@ void obj_move_all(float frametime)
 
 	MONITOR_INC( NumObjects, Num_objects );	
 
-	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		// skip objects which should be dead
 		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
 			continue;
@@ -1502,7 +1467,7 @@ void obj_move_all(float frametime)
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
 				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
 			else
-				target = NULL;
+				target = nullptr;
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
@@ -1518,7 +1483,7 @@ void obj_move_all(float frametime)
 	model_do_intrinsic_rotations();
 
 	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
+	object* objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
 		dock_move_docked_objects(objp);
 
@@ -1577,8 +1542,6 @@ void obj_move_all(float frametime)
 
 	// update artillery locking info now
 	ship_update_artillery_lock();
-
-//	mprintf(("moved all objects\n"));
 }
 
 
@@ -1656,12 +1619,12 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 		asteroid_render(obj, scene);
 		break;
 	case OBJ_JUMP_NODE:
-		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
-			if ( jnp->GetSCPObject() != obj ) {
+		for (auto & Jump_node : Jump_nodes) {
+			if ( Jump_node.GetSCPObject() != obj ) {
 				continue;
 			}
 
-			jnp->Render(scene, &obj->pos, &Eye_position);
+			Jump_node.Render(scene, &obj->pos, &Eye_position);
 		}
 		break;
 	case OBJ_WAYPOINT:
@@ -1681,13 +1644,10 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 void obj_init_all_ships_physics()
 {
-	object	*objp;
-
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (object* objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->type == OBJ_SHIP)
 			physics_ship_init(objp);
 	}
-
 }
 
 /**
@@ -1764,7 +1724,7 @@ void obj_observer_move(float frame_time)
 	float ft;
 
 	// if i'm not in multiplayer, or not an observer, bail
-	if(!(Game_mode & GM_MULTIPLAYER) || (Net_player == NULL) || !(Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type != OBJ_OBSERVER)){
+	if(!(Game_mode & GM_MULTIPLAYER) || (Net_player == nullptr) || !(Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type != OBJ_OBSERVER)){
 		return;
 	}
 
@@ -1784,14 +1744,11 @@ void obj_observer_move(float frame_time)
  */
 void obj_get_average_ship_pos( vec3d *pos )
 {
-	int count;
-	object *objp;
-
 	vm_vec_zero( pos );
 
    // average up all ship positions
-	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	int count = 0;
+	for ( object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( objp->type != OBJ_SHIP )
 			continue;
 		vm_vec_add2( pos, &objp->pos );
@@ -1812,7 +1769,7 @@ void obj_get_average_ship_pos( vec3d *pos )
  */
 int obj_team(object *objp)
 {
-	Assert( objp != NULL );
+	Assert( objp != nullptr );
 	int team = -1;
 
 	switch ( objp->type ) {
@@ -1876,8 +1833,8 @@ void obj_reset_all_collisions()
 {
 	// clear checkobjects
 #ifndef NDEBUG
-    for (int i = 0; i < MAX_OBJECTS; ++i) {
-        CheckObjects[i] = checkobject();
+    for (auto & CheckObject : CheckObjects) {
+        CheckObject = checkobject();
     }
 #endif
 
@@ -1885,8 +1842,7 @@ void obj_reset_all_collisions()
 	obj_reset_colliders();
 
 	// now add every object back into the object collision pairs
-	object *moveup;
-	moveup = GET_FIRST(&obj_used_list);
+	object* moveup = GET_FIRST(&obj_used_list);
 	while(moveup != END_OF_LIST(&obj_used_list)){
 		// he's not in the collision list
 		moveup->flags.set(Object::Object_Flags::Not_in_coll);
@@ -1902,13 +1858,13 @@ void obj_reset_all_collisions()
 // Goober5000
 int object_is_docked(object *objp)
 {
-	return (objp->dock_list != NULL);
+	return (objp->dock_list != nullptr);
 }
 
 // Goober5000
 int object_is_dead_docked(object *objp)
 {
-	return (objp->dead_dock_list != NULL);
+	return (objp->dead_dock_list != nullptr);
 }
 
 /**
@@ -1919,7 +1875,7 @@ int object_is_dead_docked(object *objp)
  */
 void object_set_gliding(object *objp, bool enable, bool force)
 {
-	Assert(objp != NULL);
+	Assert(objp != nullptr);
 
 	if(enable) {
 		if (!force) {
@@ -1942,7 +1898,7 @@ void object_set_gliding(object *objp, bool enable, bool force)
  */
 bool object_get_gliding(object *objp)
 {
-	Assert(objp != NULL);
+	Assert(objp != nullptr);
 
 	return ( ((objp->phys_info.flags & PF_GLIDING) != 0) || ((objp->phys_info.flags & PF_FORCE_GLIDE) != 0));
 }

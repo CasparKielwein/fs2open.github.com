@@ -162,16 +162,16 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
-	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
-	object_h(){objp=NULL;sig=-1;}
+	bool IsValid() const {return (objp != nullptr && objp->signature == sig && sig > 0);}
+	object_h(object *in){objp=in; if(objp!=nullptr){sig=in->signature;}}
+	object_h(){objp=nullptr;sig=-1;}
 };
 
 // object backup struct used by Fred.
-typedef struct object_orient_pos {
+struct object_orient_pos {
 	vec3d pos;
 	matrix orient;
-} object_orient_pos;
+};
 
 #ifdef OBJECT_CHECK
 class checkobject
@@ -204,9 +204,6 @@ extern int Highest_ever_object_index;
 extern object obj_free_list;
 extern object obj_used_list;
 extern object obj_create_list;
-
-extern int render_total;
-extern int render_order[MAX_OBJECTS];
 
 extern object *Viewer_obj;	// Which object is the viewer. Can be NULL.
 extern object *Player_obj;	// Which object is the player. Has to be valid.
@@ -249,7 +246,7 @@ void obj_delete(int objnum);
 void obj_delete_all();
 
 // should only be used by the editor!
-void obj_merge_created_list(void);
+void obj_merge_created_list();
 
 // recalculate object pairs for an object
 #define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(false);
